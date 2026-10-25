@@ -17,12 +17,12 @@ Open the Local URL printed by Streamlit, usually `http://localhost:8501`.
 
 ## Pages
 
-- **Overview:** Filtered training-cohort metrics, score distribution, performance levels, study-hour pattern, subject means, and example test predictions.
+- **Overview:** Filtered training-cohort metrics, score distribution, performance levels, study-hour pattern, subject means, and example test predictions. Prediction error, level accuracy, and example predictions follow the selected model.
 - **Student Explorer:** Search or compare up to four student IDs using actual scores, study/attendance fields, and four subject marks.
 - **Predict Performance:** Enter the 11 standard input fields, then choose whether to include four earlier mock marks. “No” uses the original model; “Yes” requires all four marks and uses a second trained model. Module 5 shows a rule-based study plan in either mode. If “No” was selected, marks may still be added for subject advice only.
-- **Model Insights:** Default-model held-out metrics, actual-versus-predicted chart, confusion matrix, per-level recall, downloadable test predictions, and a summary of the optional earlier-marks model.
+- **Model Insights:** Selected-model held-out metrics, actual-versus-predicted chart, confusion matrix, per-level recall, downloadable test predictions, and a comparison with the other model.
 
-The sidebar performance and attendance filters apply to **Overview** training-cohort charts. Test metrics remain fixed so filtering cannot silently change the reported evaluation.
+Choose **Include earlier mock marks?** in the sidebar or on Predict Performance. The two controls stay in sync across pages. The sidebar performance and attendance filters apply to **Overview** training-cohort charts. Test metrics follow the selected model but remain fixed when filtering the cohort.
 
 ## Interpretation
 

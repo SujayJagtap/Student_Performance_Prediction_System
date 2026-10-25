@@ -15,7 +15,7 @@ python3 train_models.py
 
 Module 3 reads Module 1's cleaned data, saved split manifest, feature metadata, and preprocessing pipeline. It writes model files to `artifacts/`, five-fold comparison tables and test predictions to `tables/`, charts to `figures/`, and a detailed result to `reports/model_report.md`.
 
-To reproduce the optional earlier-marks model with the same 8,000/2,000 split, run `python3 train_mock_marks_model.py`. It saves `artifacts/score_model_with_mock_marks.joblib`, separate metadata, and `reports/mock_marks_model_report.md`. It does not overwrite the default model.
+To reproduce the optional earlier-marks model with the same 8,000/2,000 split, run `python3 train_mock_marks_model.py`. It saves `artifacts/score_model_with_mock_marks.joblib`, separate metadata, `tables/test_predictions_with_mock_marks.csv`, and `reports/mock_marks_model_report.md`. It does not overwrite the default model.
 
 ## Level definitions
 

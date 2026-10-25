@@ -34,6 +34,7 @@ PROJECT = ROOT.parent
 DATA = PROJECT / "module1" / "data" / "processed"
 ARTIFACTS = ROOT / "artifacts"
 REPORTS = ROOT / "reports"
+TABLES = ROOT / "tables"
 MARK_COLUMNS = ["math_score", "reading_score", "writing_score", "science_score"]
 SEED = 42
 
@@ -113,6 +114,15 @@ def main() -> None:
     model.fit(x_train, y_train)
     test_predictions = model.predict(x_test)
     test_metrics = evaluate(y_test, test_predictions)
+    clipped_test_predictions = np.clip(test_predictions, 0, 100)
+    TABLES.mkdir(exist_ok=True)
+    pd.DataFrame({
+        "student_id": test_ids.to_numpy(),
+        "actual_score": y_test,
+        "predicted_score": clipped_test_predictions,
+        "actual_level": levels(y_test),
+        "score_derived_predicted_level": levels(np.round(clipped_test_predictions, 2)),
+    }).to_csv(TABLES / "test_predictions_with_mock_marks.csv", index=False)
 
     ARTIFACTS.mkdir(exist_ok=True)
     joblib.dump(model, ARTIFACTS / "score_model_with_mock_marks.joblib")

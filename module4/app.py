@@ -40,22 +40,28 @@ SUBJECTS = {"math_score": "Maths", "reading_score": "Reading", "writing_score": 
 
 
 @st.cache_data(show_spinner=False)
-def load_data() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, dict]:
+def load_data() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, dict, dict]:
     cleaned = pd.read_csv(MODULE1 / "data/processed/cleaned_student_data.csv")
     manifest = pd.read_csv(MODULE1 / "data/processed/split_manifest.csv")
     predictions = pd.read_csv(MODULE3 / "tables/test_predictions.csv")
+    mock_predictions = pd.read_csv(MODULE3 / "tables/test_predictions_with_mock_marks.csv")
     metadata = json.loads((MODULE3 / "artifacts/model_metadata.json").read_text())
+    mock_metadata = json.loads((MODULE3 / "artifacts/mock_marks_model_metadata.json").read_text())
     if cleaned.student_id.duplicated().any() or len(cleaned) != 10_000:
         raise ValueError("Module 1 cleaned student data is missing or inconsistent.")
     if len(manifest) != 10_000 or manifest.student_id.duplicated().any():
         raise ValueError("Module 1 split manifest is inconsistent.")
     train_ids = set(manifest.loc[manifest.split.eq("train"), "student_id"])
     train = cleaned.loc[cleaned.student_id.isin(train_ids)].copy()
-    if len(train) != 8_000 or len(predictions) != 2_000:
+    if len(train) != 8_000 or len(predictions) != 2_000 or len(mock_predictions) != 2_000:
         raise ValueError("Expected 8,000 training students and 2,000 held-out predictions.")
+    if (not predictions.student_id.equals(mock_predictions.student_id)
+            or not predictions.actual_score.equals(mock_predictions.actual_score)
+            or not predictions.actual_level.equals(mock_predictions.actual_level)):
+        raise ValueError("The two held-out prediction tables use different test students or outcomes.")
     cleaned["performance_level"] = level_from_score(cleaned.final_exam_score)
     train["performance_level"] = level_from_score(train.final_exam_score)
-    return cleaned, train, predictions, metadata
+    return cleaned, train, predictions, mock_predictions, metadata, mock_metadata
 
 
 def level_from_score(values: pd.Series | np.ndarray) -> np.ndarray:
@@ -215,19 +221,29 @@ def header(title: str, subtitle: str, cohort: pd.DataFrame) -> None:
             st.success(f"{row.student_id} · final score {row.final_exam_score:.1f} · {row.performance_level} level · study time {row.study_hours_per_day:.1f} h/day")
 
 
-def overview(cleaned: pd.DataFrame, predictions: pd.DataFrame, metadata: dict, filtered: pd.DataFrame) -> None:
+def sync_model_choice(source: str, target: str) -> None:
+    st.session_state[target] = st.session_state[source]
+
+
+def overview(cleaned: pd.DataFrame, predictions: pd.DataFrame, metadata: dict,
+             mock_metadata: dict, filtered: pd.DataFrame, include_mock_marks: bool) -> None:
     header("Overview", "A clear view of the student performance dataset and model results.", cleaned)
+    selected_name = "Earlier-marks model" if include_mock_marks else "Without-marks model"
+    st.caption(f"Selected prediction model: {selected_name}. Model results below use the same 2,000-student held-out test set.")
     if filtered.empty:
         st.warning("No training students match these filters. Adjust the sidebar filters.")
         return
 
+    score_metrics = mock_metadata["test_metrics"] if include_mock_marks else metadata["test_score_metrics"]
+    accuracy = (score_metrics["level_accuracy"] if include_mock_marks
+                else metadata["test_score_derived_level_metrics"]["accuracy"])
     high = int(filtered.performance_level.eq("High").sum())
     metrics = [
         ("Students analyzed", f"{len(filtered):,}", "Training cohort · filtered view", "♧"),
         ("Average final score", f"{filtered.final_exam_score.mean():.1f}", "Out of 100", "◫"),
         ("High performers", f"{high:,}", f"{high / len(filtered):.1%} of current view", "✦"),
-        ("Prediction error", f"{metadata['test_score_metrics']['mae']:.2f}", "Default model · test MAE · points", "↗"),
-        ("Level accuracy", f"{metadata['test_score_derived_level_metrics']['accuracy']:.1%}", "Default model · held-out test", "◉"),
+        ("Prediction error", f"{score_metrics['mae']:.2f}", f"{selected_name} · test MAE · points", "↗"),
+        ("Level accuracy", f"{accuracy:.2%}", f"{selected_name} · held-out test", "◉"),
     ]
     cols = st.columns(5, gap="small")
     for col, item in zip(cols, metrics):
@@ -243,7 +259,7 @@ def overview(cleaned: pd.DataFrame, predictions: pd.DataFrame, metadata: dict, f
         with panel("Performance levels", "Current training cohort view"):
             st.plotly_chart(level_donut(filtered), use_container_width=True, config={"displayModeBar": False})
     with right:
-        with panel("Held-out predictions", "Examples from the 2,000-student test set"):
+        with panel("Held-out predictions", f"{selected_name} · examples from the 2,000-student test set"):
             sample = predictions.iloc[:5][["student_id", "actual_score", "predicted_score"]].copy()
             sample.columns = ["Student", "Actual", "Predicted"]
             sample[["Actual", "Predicted"]] = sample[["Actual", "Predicted"]].round(1)
@@ -258,7 +274,7 @@ def overview(cleaned: pd.DataFrame, predictions: pd.DataFrame, metadata: dict, f
         with panel("Subject-wise comparison", "Mean of recorded subject scores"):
             st.plotly_chart(subject_means(filtered), use_container_width=True, config={"displayModeBar": False})
 
-    st.caption("Cohort charts use Module 1 training records. Test metrics use the held-out set. Associations do not prove that changing an input will change a score.")
+    st.caption("Cohort charts use Module 1 training records and remain the same for either model. Model results use the held-out test set. Associations do not prove that changing an input will change a score.")
 
 
 def student_explorer(cleaned: pd.DataFrame) -> None:
@@ -318,9 +334,9 @@ def student_explorer(cleaned: pd.DataFrame) -> None:
     st.caption("These are recorded outcomes, not a timeline. Student comparisons are descriptive and do not establish cause and effect.")
 
 
-def prediction_studio(cleaned: pd.DataFrame, train: pd.DataFrame, metadata: dict) -> None:
+def prediction_studio(cleaned: pd.DataFrame, train: pd.DataFrame, metadata: dict,
+                      mock_metadata: dict) -> None:
     header("Predict Performance", "Enter information available before the final exam.", cleaned)
-    mock_metadata = json.loads((MODULE3 / "artifacts/mock_marks_model_metadata.json").read_text())
     model_signature = (
         f"{metadata['selected_score_model']}:{','.join(metadata['raw_model_features'])}:"
         f"{mock_metadata['selected_score_model']}:{','.join(mock_metadata['raw_model_features'])}"
@@ -334,7 +350,8 @@ def prediction_studio(cleaned: pd.DataFrame, train: pd.DataFrame, metadata: dict
         st.session_state["prediction_model_signature"] = model_signature
     include_mock_marks = st.radio(
         "Include earlier mock marks in this prediction?", ["No", "Yes"], horizontal=True,
-        key="include_mock_marks_choice",
+        key="include_mock_marks_choice", on_change=sync_model_choice,
+        args=("include_mock_marks_choice", "dashboard_model_choice"),
     ) == "Yes"
     if ("last_prediction_include_mock_marks" in st.session_state
             and st.session_state["last_prediction_include_mock_marks"] != include_mock_marks):
@@ -460,17 +477,26 @@ def prediction_studio(cleaned: pd.DataFrame, train: pd.DataFrame, metadata: dict
         st.info("Fill in the fields and select Generate prediction to see an estimated score and performance level.")
 
 
-def model_insights(cleaned: pd.DataFrame, predictions: pd.DataFrame, metadata: dict) -> None:
+def model_insights(cleaned: pd.DataFrame, predictions: pd.DataFrame, metadata: dict,
+                   mock_metadata: dict, include_mock_marks: bool) -> None:
     header("Model Insights", "See how the prediction system performed on unseen test records.", cleaned)
-    metrics = metadata["test_score_metrics"]
+    selected_name = "Earlier-marks model" if include_mock_marks else "Without-marks model"
+    st.caption(f"Selected prediction model: {selected_name}. All model results on this page use that model's held-out predictions.")
+    metrics = mock_metadata["test_metrics"] if include_mock_marks else metadata["test_score_metrics"]
     levels = metadata["test_score_derived_level_metrics"]
-    mock_metadata = json.loads((MODULE3 / "artifacts/mock_marks_model_metadata.json").read_text())
-    cols = st.columns(4)
+    accuracy = metrics["level_accuracy"] if include_mock_marks else levels["accuracy"]
+    macro_f1 = metrics["level_macro_f1"] if include_mock_marks else levels["macro_f1"]
+    order = ["Low", "Average", "High"]
+    cross = pd.crosstab(predictions.actual_level, predictions.score_derived_predicted_level).reindex(
+        index=order, columns=order, fill_value=0,
+    )
+    cols = st.columns(5)
     for col, item in zip(cols, [
         ("Test students", f"{len(predictions):,}", "Held out during training", "♧"),
         ("Score MAE", f"{metrics['mae']:.2f}", "Average absolute error · points", "↗"),
         ("Score R²", f"{metrics['r2']:.3f}", "Held-out test fit", "◫"),
-        ("Level macro F1", f"{levels['macro_f1']:.3f}", "Balances all three levels", "◉"),
+        ("Level accuracy", f"{accuracy:.2%}", "Held-out test", "✦"),
+        ("Level macro F1", f"{macro_f1:.3f}", "Balances all three levels", "◉"),
     ]):
         with col:
             card(*item)
@@ -489,8 +515,6 @@ def model_insights(cleaned: pd.DataFrame, predictions: pd.DataFrame, metadata: d
             st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
     with right:
         with panel("Performance level accuracy", "Rows are actual; columns are predicted"):
-            order = ["Low", "Average", "High"]
-            cross = pd.crosstab(predictions.actual_level, predictions.score_derived_predicted_level).reindex(index=order, columns=order, fill_value=0)
             fig = go.Figure(go.Heatmap(z=cross.values, x=order, y=order, colorscale=[[0, "#eff9f9"], [1, "#099b93"]],
                                        showscale=False, text=cross.values, texttemplate="%{text}",
                                        hovertemplate="Actual %{y}<br>Predicted %{x}<br>Students %{z}<extra></extra>"))
@@ -511,32 +535,49 @@ def model_insights(cleaned: pd.DataFrame, predictions: pd.DataFrame, metadata: d
             st.download_button("Download shown predictions", shown.to_csv(index=False).encode("utf-8"), "module4_test_predictions.csv", "text/csv")
     with right:
         with panel("What the model can and cannot show", "Evaluation context"):
-            st.write(f"**Selected score model:** {metadata['selected_score_model']}, chosen by five-fold cross-validation on training records.")
-            st.write(f"**Per-level recall:** Low {levels['per_class']['Low']['recall']:.1%} · Average {levels['per_class']['Average']['recall']:.1%} · High {levels['per_class']['High']['recall']:.1%}.")
-            st.write("**Inputs:** Study behavior, attendance, previous GPA, and learning environment. Subject marks and source outcome labels are excluded.")
-            st.caption("This default model excludes subject marks. The optional second model treats them as earlier mock marks based on the user's confirmation; the original data source and timing remain independently unverified.")
+            model_name = mock_metadata["selected_score_model"] if include_mock_marks else metadata["selected_score_model"]
+            if include_mock_marks:
+                st.write(f"**Selected score model:** {model_name}, evaluated with five-fold cross-validation on training records.")
+            else:
+                st.write(f"**Selected score model:** {model_name}, chosen by five-fold cross-validation on training records.")
+            recalls = cross.to_numpy().diagonal() / cross.sum(axis=1).to_numpy()
+            st.write(f"**Per-level recall:** Low {recalls[0]:.1%} · Average {recalls[1]:.1%} · High {recalls[2]:.1%}.")
+            if include_mock_marks:
+                st.write("**Inputs:** The 11 standard pre-exam fields plus Maths, Reading, Writing, and Science earlier mock marks. The final score and outcome labels are excluded.")
+                st.caption("The four subject columns are treated as earlier mock marks based on the user's confirmation; their timing and the original dataset source remain independently unverified.")
+            else:
+                st.write("**Inputs:** Study behavior, attendance, previous GPA, and learning environment. Subject marks and source outcome labels are excluded.")
+                st.caption("This model excludes subject marks. The original dataset source remains independently unverified.")
 
-    with panel("Optional earlier-marks model", "Used only when a user chooses to include four earlier mock marks"):
-        with_marks = mock_metadata["test_metrics"]
+    with panel("Other model for comparison", "Results on the same 2,000-student test set"):
+        other = metadata["test_score_metrics"] if include_mock_marks else mock_metadata["test_metrics"]
+        other_accuracy = levels["accuracy"] if include_mock_marks else other["level_accuracy"]
+        other_f1 = levels["macro_f1"] if include_mock_marks else other["level_macro_f1"]
+        other_name = "Without-marks model" if include_mock_marks else "Earlier-marks model"
         st.write(
-            f"The separate Polynomial Ridge model reached **{with_marks['level_accuracy']:.2%}** "
-            f"Low/Average/High accuracy, **{with_marks['level_macro_f1']:.3f}** macro F1, and "
-            f"**{with_marks['mae']:.2f} points** MAE on the same 2,000-student test set."
+            f"The {other_name} reached **{other_accuracy:.2%}** Low/Average/High accuracy, "
+            f"**{other_f1:.3f}** macro F1, and **{other['mae']:.2f} points** MAE."
         )
-        st.caption("These results assume the subject columns are earlier mock marks, as confirmed by the user. Their timing and the dataset source have not been independently verified; the test set is not fresh external validation.")
+        st.caption("The earlier-marks results assume the subject columns were available before the final exam, as confirmed by the user. Their timing and the dataset source have not been independently verified; this test set is not fresh external validation.")
 
 
 def main() -> None:
     apply_style()
     try:
-        cleaned, train, predictions, metadata = load_data()
+        cleaned, train, predictions, mock_predictions, metadata, mock_metadata = load_data()
     except (FileNotFoundError, ValueError, KeyError) as exc:
         st.error(f"Required Module 1 or Module 3 file is unavailable: {exc}")
         st.stop()
 
+    st.session_state.setdefault("dashboard_model_choice", "No")
+    st.session_state.setdefault("include_mock_marks_choice", st.session_state["dashboard_model_choice"])
     with st.sidebar:
         st.markdown('<div class="brand"><span class="brand-icon">S</span><span>SkillOrbit</span></div>', unsafe_allow_html=True)
         page = st.radio("Navigate", ["Overview", "Student Explorer", "Predict Performance", "Model Insights"], label_visibility="collapsed")
+        st.markdown('<div class="divider-label">Prediction model</div>', unsafe_allow_html=True)
+        st.radio("Include earlier mock marks?", ["No", "Yes"], horizontal=True,
+                 key="dashboard_model_choice", on_change=sync_model_choice,
+                 args=("dashboard_model_choice", "include_mock_marks_choice"))
         st.markdown('<div class="divider-label">Explore cohort</div>', unsafe_allow_html=True)
         level = st.selectbox("Performance level", ["All", "Low", "Average", "High"])
         attendance_range = st.slider("Attendance rate (%)", min_value=0, max_value=100, value=(0, 100))
@@ -545,19 +586,27 @@ def main() -> None:
         st.caption("Analytics: 8,000 training records\n\nEvaluation: 2,000 test records")
         st.markdown('<p class="small-note">Capstone project · Modules 4–5<br>Dashboard and study plan</p>', unsafe_allow_html=True)
 
+    choice = st.session_state["dashboard_model_choice"]
+    if st.session_state.get("model_choice_for_prediction") != choice:
+        for key in ("last_prediction", "last_inputs", "mock_subject_marks", "last_prediction_include_mock_marks"):
+            st.session_state.pop(key, None)
+        st.session_state["model_choice_for_prediction"] = choice
+    include_mock_marks = choice == "Yes"
+    selected_predictions = mock_predictions if include_mock_marks else predictions
+
     filtered = train.copy()
     if level != "All":
         filtered = filtered.loc[filtered.performance_level.eq(level)]
     filtered = filtered.loc[filtered.attendance_rate.between(*attendance_range)]
 
     if page == "Overview":
-        overview(cleaned, predictions, metadata, filtered)
+        overview(cleaned, selected_predictions, metadata, mock_metadata, filtered, include_mock_marks)
     elif page == "Student Explorer":
         student_explorer(cleaned)
     elif page == "Predict Performance":
-        prediction_studio(cleaned, train, metadata)
+        prediction_studio(cleaned, train, metadata, mock_metadata)
     else:
-        model_insights(cleaned, predictions, metadata)
+        model_insights(cleaned, selected_predictions, metadata, mock_metadata, include_mock_marks)
 
 
 if __name__ == "__main__":
