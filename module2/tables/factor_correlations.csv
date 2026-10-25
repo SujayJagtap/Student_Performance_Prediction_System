@@ -1,0 +1,9 @@
+factor,column,pearson_r,spearman_r
+Previous GPA,previous_gpa,0.8914,0.8822
+Study hours per day,study_hours_per_day,0.5791,0.5736
+Social media hours,social_media_hours,-0.2466,-0.2417
+Assignment completion,assignment_completion_rate,0.1711,0.1627
+Attendance rate,attendance_rate,0.1494,0.1517
+Participation score,participation_score,0.1317,0.1347
+Sleep hours,sleep_hours,0.0269,0.0251
+Online courses completed,online_courses_completed,-0.0208,-0.0178

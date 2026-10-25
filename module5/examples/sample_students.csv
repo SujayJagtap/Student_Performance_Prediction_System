@@ -1,0 +1,4 @@
+student_id,study_hours_per_day,attendance_rate,sleep_hours,social_media_hours,assignment_completion_rate,participation_score,online_courses_completed,previous_gpa,internet_access,study_environment,tutoring,mock_math_score,mock_reading_score,mock_writing_score,mock_science_score
+DEMO01,1.2,70,6.5,4.5,60,55,0,1.5,Yes,Noisy,No,42,65,58,40
+DEMO02,3.5,90,7,2,85,75,2,2.5,Yes,Quiet,Yes,75,72,74,73
+DEMO03,2.0,80,7,3,65,52,1,2.0,No,Moderate,No,60,45,62,61

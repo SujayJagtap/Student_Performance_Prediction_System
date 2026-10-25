@@ -1,0 +1,49 @@
+{
+  "selected_score_model": "Polynomial Ridge + earlier mock marks",
+  "raw_model_features": [
+    "study_hours_per_day",
+    "attendance_rate",
+    "sleep_hours",
+    "social_media_hours",
+    "assignment_completion_rate",
+    "participation_score",
+    "online_courses_completed",
+    "previous_gpa",
+    "math_score",
+    "reading_score",
+    "writing_score",
+    "science_score",
+    "internet_access",
+    "study_environment",
+    "tutoring"
+  ],
+  "mock_mark_columns": [
+    "math_score",
+    "reading_score",
+    "writing_score",
+    "science_score"
+  ],
+  "train_rows": 8000,
+  "test_rows": 2000,
+  "random_state": 42,
+  "cv_folds": 5,
+  "mock_marks_assumption": "User confirmed these subject columns are earlier mock marks known before the final exam; original dataset provenance and timing are not independently verified.",
+  "cv_metrics": {
+    "mae": 1.5515819669660837,
+    "rmse": 1.9454909762158354,
+    "r2": 0.97429117846522,
+    "level_accuracy": 0.926375,
+    "level_balanced_accuracy": 0.9149448866821567,
+    "level_macro_f1": 0.915630851541405,
+    "level_errors": 589
+  },
+  "test_metrics": {
+    "mae": 1.5218776588817096,
+    "rmse": 1.9072453838417027,
+    "r2": 0.9756065509784514,
+    "level_accuracy": 0.9395,
+    "level_balanced_accuracy": 0.9312584568298968,
+    "level_macro_f1": 0.9339291130734981,
+    "level_errors": 121
+  }
+}

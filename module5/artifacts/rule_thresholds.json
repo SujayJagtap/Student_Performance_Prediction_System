@@ -1,0 +1,15 @@
+{
+  "reference": "25th/75th percentiles of the Module 1 training cohort; descriptive flags, not recommended targets",
+  "train_rows": 8000,
+  "lower_quartile": {
+    "study_hours_per_day": 2.22,
+    "attendance_rate": 78.4,
+    "assignment_completion_rate": 70.28,
+    "participation_score": 59.9,
+    "previous_gpa": 1.61
+  },
+  "upper_quartile": {
+    "social_media_hours": 3.5
+  },
+  "subject_gap_points": 8.0
+}

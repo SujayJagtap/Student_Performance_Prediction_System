@@ -1,0 +1,9 @@
+{
+  "cleaned_records": 10000,
+  "analysis_records": 8000,
+  "test_records_held_out": 2000,
+  "final_score_mean": 49.6697,
+  "final_score_median": 49.55,
+  "subject_score_mean_correlation_with_final": 0.9861,
+  "weak_subject_ties": 51
+}

@@ -1,0 +1,104 @@
+{
+  "quality": {
+    "source_rows": 10000,
+    "cleaned_rows": 10000,
+    "source_columns": 23,
+    "exact_duplicates_removed": 0,
+    "duplicate_student_ids": 0,
+    "missing_values_by_column": {
+      "student_id": 0,
+      "gender": 0,
+      "age": 0,
+      "parental_education": 0,
+      "family_income": 0,
+      "internet_access": 0,
+      "study_environment": 0,
+      "study_hours_per_day": 0,
+      "attendance_rate": 0,
+      "sleep_hours": 0,
+      "social_media_hours": 0,
+      "assignment_completion_rate": 0,
+      "participation_score": 0,
+      "online_courses_completed": 0,
+      "tutoring": 0,
+      "math_score": 0,
+      "reading_score": 0,
+      "writing_score": 0,
+      "science_score": 0,
+      "final_exam_score": 0,
+      "previous_gpa": 0,
+      "pass_fail": 0,
+      "grade_category": 0
+    },
+    "score_min": 4.4,
+    "score_max": 97.8,
+    "pass_fail_counts": {
+      "Fail": 5142,
+      "Pass": 4858
+    },
+    "grade_category_counts": {
+      "F": 5172,
+      "D": 3829,
+      "C": 904,
+      "B": 85,
+      "A": 10
+    },
+    "pass_and_f_count": 30
+  },
+  "target": "final_exam_score",
+  "numeric_model_features": [
+    "study_hours_per_day",
+    "attendance_rate",
+    "sleep_hours",
+    "social_media_hours",
+    "assignment_completion_rate",
+    "participation_score",
+    "online_courses_completed",
+    "previous_gpa"
+  ],
+  "categorical_model_features": [
+    "internet_access",
+    "study_environment",
+    "tutoring"
+  ],
+  "excluded_derived_labels": [
+    "pass_fail",
+    "grade_category"
+  ],
+  "subject_scores_excluded_from_prediction": [
+    "math_score",
+    "reading_score",
+    "writing_score",
+    "science_score"
+  ],
+  "background_columns_excluded_from_initial_model": [
+    "gender",
+    "age",
+    "parental_education",
+    "family_income"
+  ],
+  "split": {
+    "train_rows": 8000,
+    "test_rows": 2000,
+    "random_state": 42
+  },
+  "encoded_feature_names": [
+    "study_hours_per_day",
+    "attendance_rate",
+    "sleep_hours",
+    "social_media_hours",
+    "assignment_completion_rate",
+    "participation_score",
+    "online_courses_completed",
+    "previous_gpa",
+    "internet_access_No",
+    "internet_access_Yes",
+    "study_environment_Moderate",
+    "study_environment_Noisy",
+    "study_environment_Quiet",
+    "tutoring_No",
+    "tutoring_Yes"
+  ],
+  "pandas_version": "2.3.3",
+  "scikit_learn_version": "1.6.1"
+}

@@ -1,0 +1,108 @@
+{
+  "target": "final_exam_score",
+  "level_rule": {
+    "Low": "score < 50",
+    "Average": "50 <= score <= 65",
+    "High": "score > 65"
+  },
+  "raw_model_features": [
+    "study_hours_per_day",
+    "attendance_rate",
+    "sleep_hours",
+    "social_media_hours",
+    "assignment_completion_rate",
+    "participation_score",
+    "online_courses_completed",
+    "previous_gpa",
+    "internet_access",
+    "study_environment",
+    "tutoring"
+  ],
+  "train_rows": 8000,
+  "test_rows": 2000,
+  "random_state": 42,
+  "cv_folds": 5,
+  "selected_score_model": "Polynomial Ridge",
+  "score_model_selection_metric": "five-fold CV score-derived level accuracy; macro F1 tie-breaker",
+  "selected_direct_classifier": "Random forest",
+  "subject_scores_excluded_from_prediction": [
+    "math_score",
+    "reading_score",
+    "writing_score",
+    "science_score"
+  ],
+  "subject_mean_target_correlation_train": 0.9861364626280594,
+  "class_counts": {
+    "train": {
+      "Low": 4118,
+      "Average": 3083,
+      "High": 799
+    },
+    "test": {
+      "Low": 1024,
+      "Average": 776,
+      "High": 200
+    }
+  },
+  "test_score_metrics": {
+    "mae": 4.1451737446892,
+    "rmse": 5.213334241936125,
+    "r2": 0.817740067691475
+  },
+  "test_score_derived_level_metrics": {
+    "accuracy": 0.806,
+    "balanced_accuracy": 0.7642830487542955,
+    "macro_f1": 0.7762818280031311,
+    "per_class": {
+      "Low": {
+        "precision": 0.8575553416746872,
+        "recall": 0.8701171875,
+        "f1": 0.8637905962190984,
+        "support": 1024
+      },
+      "Average": {
+        "precision": 0.7461928934010152,
+        "recall": 0.7577319587628866,
+        "f1": 0.7519181585677749,
+        "support": 776
+      },
+      "High": {
+        "precision": 0.7687861271676301,
+        "recall": 0.665,
+        "f1": 0.7131367292225201,
+        "support": 200
+      }
+    }
+  },
+  "test_direct_classifier_metrics": {
+    "accuracy": 0.798,
+    "balanced_accuracy": 0.7679425740979381,
+    "macro_f1": 0.7712454417977783,
+    "per_class": {
+      "Low": {
+        "precision": 0.8600985221674877,
+        "recall": 0.8525390625,
+        "f1": 0.8563021088769004,
+        "support": 1024
+      },
+      "Average": {
+        "precision": 0.7351828499369483,
+        "recall": 0.7512886597938144,
+        "f1": 0.7431485022307202,
+        "support": 776
+      },
+      "High": {
+        "precision": 0.7291666666666666,
+        "recall": 0.7,
+        "f1": 0.7142857142857143,
+        "support": 200
+      }
+    }
+  },
+  "prediction_score_range": [
+    18.152115375299843,
+    89.88504769044548
+  ],
+  "scikit_learn_version": "1.6.1",
+  "pandas_version": "2.3.3"
+}
